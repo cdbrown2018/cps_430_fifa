@@ -114,7 +114,32 @@ namespace cps430_project.Controllers
                 .ToList();
         }
 
-        // Any player that's ever got a goal
-        // 
+        public List<Player> GetScoringPlayers()
+        {
+            return _context.Players
+                .Include(p => p.PlayerMatches)
+                .Where(p => p.PlayerMatches.Sum(x => x.GoalsScored) > 0)
+                .ToList();
+        }
+
+        public Team? GetMostConcededGoals()
+        {
+            return _context.Teams
+                .Include(t => t.AwayMatches)
+                .ThenInclude(t => t.PlayerMatches)
+                .ThenInclude(t => t.Player)
+                .Include(t => t.HomeMatches)
+                .ThenInclude(t => t.PlayerMatches)
+                .ThenInclude(t => t.Player)
+                .OrderByDescending(t => t.AwayMatches
+                        .Sum(x => x.PlayerMatches
+                                .Where(p => p.Player.TeamId != t.Id)
+                                .Sum(y => y.GoalsScored)))
+                .ThenByDescending(t => t.HomeMatches
+                        .Sum(x => x.PlayerMatches
+                                .Where(p => p.Player.TeamId != t.Id)
+                                .Sum(y => y.GoalsScored)))
+                .FirstOrDefault();
+        }
     }
 }
